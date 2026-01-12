@@ -111,6 +111,26 @@ async function initDb() {
     END $$;
   `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tenants (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+    -- Create unique index on slug
+    CREATE UNIQUE INDEX IF NOT EXISTS tenants_slug_idx ON tenants (slug);
+
+    -- Optional: restrict allowed status values
+    ALTER TABLE tenants
+      ADD CONSTRAINT tenants_status_check CHECK (status IN ('active','inactive','suspended','deleted'));
+  `);
+
     console.log('Tables created or already exist.');
   } catch (err) {
     console.error('Error in initDb:', err);

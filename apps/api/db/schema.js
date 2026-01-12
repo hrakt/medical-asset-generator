@@ -39,4 +39,13 @@ const jobs = pgTable('jobs', {
     updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow(),
 });
 
-module.exports = { tools, jobs, requests };
+const tenants = pgTable('tenants', {
+    id: serial('id').primaryKey(),
+    name: text('name').notNull(),
+    status: text('status').notNull(),
+    slug: text('slug').nutNull(),
+    createdAt: timestamp('createdAt', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true }).defaultNow(),
+})
+
+module.exports = { tools, jobs, requests, tenants };
