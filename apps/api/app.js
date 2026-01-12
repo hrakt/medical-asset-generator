@@ -11,4 +11,6 @@ app.use('/jobs', require('./routes/jobs'));
 
 app.use('/tools', require('./routes/tools'));
 
+app.use('/tenants', require('./routes/tenants'));
+
 module.exports = app;
