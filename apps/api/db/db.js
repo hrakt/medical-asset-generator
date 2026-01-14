@@ -131,6 +131,29 @@ async function initDb() {
       ADD CONSTRAINT tenants_status_check CHECK (status IN ('active','inactive','suspended','deleted'));
   `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        "tenantId" INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      ALTER TABLE requests
+      ADD COLUMN IF NOT EXISTS "tenantId" INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+      ADD COLUMN IF NOT EXISTS "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE jobs
+      ADD COLUMN IF NOT EXISTS "tenantId" INTEGER REFERENCES tenants(id) ON DELETE CASCADE;
+    `);
+
     console.log('Tables created or already exist.');
   } catch (err) {
     console.error('Error in initDb:', err);
