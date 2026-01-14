@@ -1,5 +1,16 @@
 const express = require('express');
-const { createTenant } = require('../services/createTenant')
+const { createTenant } = require('../services/createTenant');
+const { tenants } = require('../db/schema');
+
+
+router.get('/', async (req, res) => {
+  try {
+    const allTenants = await db.select().from(tenants);
+    res.json(allTenants)
+  } catch (error) {
+    console.error('Failed to fetch all the tenants');
+  }
+})
 
 
 router.post('/', async (req, res) => {
