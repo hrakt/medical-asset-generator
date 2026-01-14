@@ -1,4 +1,6 @@
 const express = require('express');
+const router = express.Router();
+const { db } = require('../db/db');
 const { createTenant } = require('../services/createTenant');
 const { tenants } = require('../db/schema');
 
@@ -9,6 +11,7 @@ router.get('/', async (req, res) => {
     res.json(allTenants)
   } catch (error) {
     console.error('Failed to fetch all the tenants');
+    res.status(500).json({ error: 'Failed to fetch tenants' });
   }
 })
 
