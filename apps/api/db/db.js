@@ -111,6 +111,49 @@ async function initDb() {
     END $$;
   `);
 
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tenants (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+    -- Create unique index on slug
+    CREATE UNIQUE INDEX IF NOT EXISTS tenants_slug_idx ON tenants (slug);
+
+    -- Optional: restrict allowed status values
+    ALTER TABLE tenants
+      ADD CONSTRAINT tenants_status_check CHECK (status IN ('active','inactive','suspended','deleted'));
+  `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        "tenantId" INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        "createdAt" TIMESTAMPTZ DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    await pool.query(`
+      ALTER TABLE requests
+      ADD COLUMN IF NOT EXISTS "tenantId" INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+      ADD COLUMN IF NOT EXISTS "userId" INTEGER REFERENCES users(id) ON DELETE CASCADE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE jobs
+      ADD COLUMN IF NOT EXISTS "tenantId" INTEGER REFERENCES tenants(id) ON DELETE CASCADE;
+    `);
+
     console.log('Tables created or already exist.');
   } catch (err) {
     console.error('Error in initDb:', err);
