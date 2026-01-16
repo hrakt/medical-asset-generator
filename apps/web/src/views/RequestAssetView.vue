@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
+const auth = useAuthStore();
 
 interface RequestForm {
   doctorName: string;
@@ -27,6 +29,10 @@ const errorMessage = ref<string | null>(null);
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 async function submitRequest() {
+  if (!auth.token) {
+    router.push('/login');
+    return;
+  }
   status.value = 'submitting';
   errorMessage.value = null;
 
@@ -35,7 +41,10 @@ async function submitRequest() {
     const promises = Array.from({ length: numberOfRequests.value }, () =>
       fetch(`${API_BASE}/requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`
+        },
         body: JSON.stringify(form.value),
       })
     );
@@ -47,6 +56,11 @@ async function submitRequest() {
     
     if (!allSucceeded) {
       const failedCount = results.filter(res => !res.ok).length;
+      if (results.some(res => res.status === 401 || res.status === 403)) {
+        auth.clearAuth();
+        router.push('/login');
+        return;
+      }
       throw new Error(`${failedCount} request(s) failed to submit`);
     }
 
@@ -62,6 +76,11 @@ async function submitRequest() {
     errorMessage.value = err.message;
   }
 }
+
+function logout() {
+  auth.clearAuth();
+  router.push('/login');
+}
 </script>
 
 <template>
@@ -72,6 +91,7 @@ async function submitRequest() {
         <h1 class="text-2xl font-semibold">Request Marketing Asset</h1>
         <div class="flex gap-3 text-sm">
              <RouterLink to="/history" class="text-slate-400 hover:text-white">History</RouterLink>
+             <button @click="logout" class="text-slate-400 hover:text-white">Logout</button>
         </div>
       </div>
 
